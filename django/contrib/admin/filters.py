@@ -29,8 +29,7 @@ class ListFilter:
         self.used_parameters = {}
         if self.title is None:
             raise ImproperlyConfigured(
-                "The list filter '%s' does not specify a 'title'."
-                % self.__class__.__name__
+                f"The list filter '{self.__class__.__name__}' does not specify a 'title'."
             )
 
     def has_output(self):
@@ -77,8 +76,7 @@ class SimpleListFilter(ListFilter):
         super().__init__(request, params, model, model_admin)
         if self.parameter_name is None:
             raise ImproperlyConfigured(
-                "The list filter '%s' does not specify a 'parameter_name'."
-                % self.__class__.__name__
+                f"The list filter '{self.__class__.__name__}' does not specify a 'parameter_name'."
             )
         if self.parameter_name in params:
             value = params.pop(self.parameter_name)
@@ -180,8 +178,8 @@ class FieldListFilter(ListFilter):
 class RelatedFieldListFilter(FieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
         other_model = get_model_from_relation(field)
-        self.lookup_kwarg = "%s__%s__exact" % (field_path, field.target_field.name)
-        self.lookup_kwarg_isnull = "%s__isnull" % field_path
+        self.lookup_kwarg = f"{field_path}__{field.target_field.name}__exact"
+        self.lookup_kwarg_isnull = f"{field_path}__isnull"
         self.lookup_val = params.get(self.lookup_kwarg)
         self.lookup_val_isnull = params.get(self.lookup_kwarg_isnull)
         super().__init__(field, request, params, model, model_admin, field_path)
@@ -202,10 +200,7 @@ class RelatedFieldListFilter(FieldListFilter):
         return self.field.null or (self.field.is_relation and self.field.many_to_many)
 
     def has_output(self):
-        if self.include_empty_choice:
-            extra = 1
-        else:
-            extra = 0
+        extra = 1 if self.include_empty_choice else 0
         return len(self.lookup_choices) + extra > 1
 
     def expected_parameters(self):
@@ -216,9 +211,7 @@ class RelatedFieldListFilter(FieldListFilter):
         Return the model admin's ordering for related field, if provided.
         """
         related_admin = model_admin.admin_site._registry.get(field.remote_field.model)
-        if related_admin is not None:
-            return related_admin.get_ordering(request)
-        return ()
+        return related_admin.get_ordering(request) if related_admin is not None else ()
 
     def field_choices(self, field, request, model_admin):
         ordering = self.field_admin_ordering(field, request, model_admin)
@@ -255,8 +248,8 @@ FieldListFilter.register(lambda f: f.remote_field, RelatedFieldListFilter)
 
 class BooleanFieldListFilter(FieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
-        self.lookup_kwarg = "%s__exact" % field_path
-        self.lookup_kwarg2 = "%s__isnull" % field_path
+        self.lookup_kwarg = f"{field_path}__exact"
+        self.lookup_kwarg2 = f"{field_path}__isnull"
         self.lookup_val = params.get(self.lookup_kwarg)
         self.lookup_val2 = params.get(self.lookup_kwarg2)
         super().__init__(field, request, params, model, model_admin, field_path)
@@ -303,8 +296,8 @@ FieldListFilter.register(
 
 class ChoicesFieldListFilter(FieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
-        self.lookup_kwarg = "%s__exact" % field_path
-        self.lookup_kwarg_isnull = "%s__isnull" % field_path
+        self.lookup_kwarg = f"{field_path}__exact"
+        self.lookup_kwarg_isnull = f"{field_path}__isnull"
         self.lookup_val = params.get(self.lookup_kwarg)
         self.lookup_val_isnull = params.get(self.lookup_kwarg_isnull)
         super().__init__(field, request, params, model, model_admin, field_path)
@@ -347,7 +340,7 @@ FieldListFilter.register(lambda f: bool(f.choices), ChoicesFieldListFilter)
 
 class DateFieldListFilter(FieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
-        self.field_generic = "%s__" % field_path
+        self.field_generic = f"{field_path}__"
         self.date_params = {
             k: v for k, v in params.items() if k.startswith(self.field_generic)
         }
@@ -369,8 +362,8 @@ class DateFieldListFilter(FieldListFilter):
             next_month = today.replace(month=today.month + 1, day=1)
         next_year = today.replace(year=today.year + 1, month=1, day=1)
 
-        self.lookup_kwarg_since = "%s__gte" % field_path
-        self.lookup_kwarg_until = "%s__lt" % field_path
+        self.lookup_kwarg_since = f"{field_path}__gte"
+        self.lookup_kwarg_until = f"{field_path}__lt"
         self.links = (
             (_("Any date"), {}),
             (
@@ -403,10 +396,10 @@ class DateFieldListFilter(FieldListFilter):
             ),
         )
         if field.null:
-            self.lookup_kwarg_isnull = "%s__isnull" % field_path
+            self.lookup_kwarg_isnull = f"{field_path}__isnull"
             self.links += (
-                (_("No date"), {self.field_generic + "isnull": "True"}),
-                (_("Has date"), {self.field_generic + "isnull": "False"}),
+                (_("No date"), {f"{self.field_generic}isnull": "True"}),
+                (_("Has date"), {f"{self.field_generic}isnull": "False"}),
             )
         super().__init__(field, request, params, model, model_admin, field_path)
 
@@ -436,7 +429,7 @@ FieldListFilter.register(lambda f: isinstance(f, models.DateField), DateFieldLis
 class AllValuesFieldListFilter(FieldListFilter):
     def __init__(self, field, request, params, model, model_admin, field_path):
         self.lookup_kwarg = field_path
-        self.lookup_kwarg_isnull = "%s__isnull" % field_path
+        self.lookup_kwarg_isnull = f"{field_path}__isnull"
         self.lookup_val = params.get(self.lookup_kwarg)
         self.lookup_val_isnull = params.get(self.lookup_kwarg_isnull)
         self.empty_value_display = model_admin.get_empty_value_display()
@@ -493,7 +486,7 @@ class RelatedOnlyFieldListFilter(RelatedFieldListFilter):
         pk_qs = (
             model_admin.get_queryset(request)
             .distinct()
-            .values_list("%s__pk" % self.field_path, flat=True)
+            .values_list(f"{self.field_path}__pk", flat=True)
         )
         ordering = self.field_admin_ordering(field, request, model_admin)
         return field.get_choices(
@@ -512,7 +505,7 @@ class EmptyFieldListFilter(FieldListFilter):
                     field.name,
                 )
             )
-        self.lookup_kwarg = "%s__isempty" % field_path
+        self.lookup_kwarg = f"{field_path}__isempty"
         self.lookup_val = params.get(self.lookup_kwarg)
         super().__init__(field, request, params, model, model_admin, field_path)
 
